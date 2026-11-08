@@ -1,5 +1,7 @@
 # Armar una startup nueva a partir de la plantilla
 
+> En la rama `piloto-vacacionapp` está el ejemplo completo ya resuelto (VacacionApp). La plantilla neutra es el commit/rama `main`.
+
 Checklist en el orden en que conviene hacerlo. Lo marcado con 🔒 afecta la seguridad: se hace siempre en pareja con las reglas y sus tests.
 
 1. **Identidad** — `src/config/app.ts` (`MARCA`, `LANDING`), `src/styles/tema.css` (colores, radio, fuente), `public/logo.svg` y `public/favicon.svg`, `<title>` en `index.html`.

@@ -1,15 +1,15 @@
-# Plantilla de app para startups — Taller Emprendedor
+# VacacionApp — Taller Emprendedor (UCAECE Mar del Plata)
 
-Plantilla común para las apps de las startups del Taller Emprendedor (UCAECE Mar del Plata). Trae lo mismo en todas: web pública, app de usuarios (registro, login con Google y con email, tipos de usuario con aprobación), panel de administración, base de datos, reglas de seguridad, tests y publicación automática. **Todo gratis y sin tarjeta** (Firebase plan Spark + GitHub).
+VacacionApp reúne balnearios, actividades acuáticas, bienestar y gastronomía de Mar del Plata: los **turistas** exploran, guardan favoritos y reservan (**pagos simulados, no se cobra nada**); los **prestadores** cargan su comercio (lo aprueba el equipo) y gestionan sus servicios y reservas; el **admin** modera todo. Está construida desde la plantilla común del Taller (rama/commit base `main` del repo de la plantilla). **Todo gratis y sin tarjeta** (Firebase plan Spark + GitHub).
 
-> Esta es la versión **neutra**. Para ver una app real armada con ella, mirá la rama `piloto-vacacionapp`.
+Sitio: https://vacacionapp-mdp-d7e72.web.app (cuando se despliegue) · Proyecto Firebase: `vacacionapp-mdp-d7e72`.
 
 ## Qué incluye
 
 | Parte | Ruta | Descripción |
 |---|---|---|
-| Web pública | `/` | Landing: problema, solución, beneficios, llamado a la acción, botones Ingresar / Registrarme |
-| App de usuarios | `/app/...` | Registro y login (Google y email/contraseña), sesión persistente, tipo de usuario, panel por rol. Mobile first |
+| Web pública | `/`, `/explorar`, `/servicio/:id` | Landing y catálogo público con filtros. Landing: problema, solución, beneficios, llamado a la acción, botones Ingresar / Registrarme |
+| App de usuarios | `/app/...` (`/app/turista`, `/app/prestador`) | Registro y login (Google y email/contraseña), sesión persistente, tipo de usuario, panel por rol. Mobile first |
 | Administración | `/admin/...` | Solo login (sin registro). Gestiona usuarios y datos. Rol validado en el servidor con las reglas |
 
 **Stack:** Vite + React + TypeScript estricto + Tailwind + React Router · Firebase (Auth + Firestore + Hosting) · Zod · ESLint · Playwright · GitHub Actions. Sin servidor propio, sin Cloud Functions, sin Storage.
@@ -33,10 +33,12 @@ Contraseña de todos: `Demo-Clave-2026`
 
 | Tipo | Email | Estado |
 |---|---|---|
-| Usuario | `usuario.demo@plantilla.test` | activo |
-| Socio | `socio.demo@plantilla.test` | activo |
-| Socio pendiente | `pendiente.demo@plantilla.test` | pendiente de aprobación |
-| Admin | `admin.demo@plantilla.test` | entra en `/admin/login` |
+| Turista | `turista.demo@vacacionapp.test` | activo (tiene una reserva y un favorito de ejemplo) |
+| Prestador | `prestador.demo@vacacionapp.test` | activo, comercio "Balneario Alfonsina" aprobado |
+| Prestador pendiente | `pendiente.demo@vacacionapp.test` | comercio "Sol y Arena" pendiente (para practicar la aprobación) |
+| Admin | `admin.demo@vacacionapp.test` | entra en `/admin/login` |
+
+Todo lo demo está marcado `isDemo` y con la etiqueta DEMO en pantalla.
 
 > **Login con Google:** no se puede probar contra los emuladores (Google no autentica en local). Se prueba en el sitio publicado.
 
@@ -83,11 +85,17 @@ Para que el workflow funcione el responsable del proyecto configura **una sola v
 
 > Nunca subas ni pegues la clave JSON en el repo, en un chat ni en un issue. `.gitignore` ya bloquea los nombres típicos.
 
+## Datos y reglas
+
+Colecciones: `users`, `commerces` (id = uid del prestador), `services`, `favorites` (id `uid_servicio`), `bookings` (con pago simulado). Las reglas verifican, entre otras cosas: que el total de una reserva coincida con el precio real del servicio, que solo un prestador activo con comercio aprobado publique, que nadie cambie su propio rol/estado, y que los datos de contacto de los comercios no sean públicos. Detalle en `firestore.rules` y `tests/rules/`.
+
+Limitación conocida: si el admin suspende a un prestador desde *Usuarios* (no desde *Comercios*), sus servicios siguen visibles hasta que se suspenda el comercio, que es lo que los oculta.
+
 ## Cómo desplegar (lo hace el responsable del proyecto)
 
 1. Crear el proyecto en [Firebase Console](https://console.firebase.google.com) (**plan Spark**, no activar Blaze), habilitar *Authentication* (Email/contraseña y Google), *Firestore* (modo producción) y *Hosting*. Registrar una app web y copiar su config a `.env.production`.
 2. Ajustar el id del proyecto en `.firebaserc`.
-3. Subir las reglas: `npx firebase deploy --only firestore:rules,firestore:indexes` (o `npm run deploy:reglas`).
+3. Subir las reglas: `npx firebase deploy --account fvinciguerra@ucaecemdp.edu.ar --project vacacionapp-mdp-d7e72 --only firestore:rules,firestore:indexes` (o `npm run deploy:reglas`).
 4. Conectar GitHub ↔ Hosting **una sola vez**: `npx firebase init hosting:github` (crea la cuenta de servicio y carga el secreto `FIREBASE_SERVICE_ACCOUNT_...` en GitHub; **no se crea ni se sube a mano**). Ajustar el nombre del secreto en `.github/workflows/deploy.yml` si hace falta.
 5. Desde ahí, **cada merge a `main` publica la web** (`.github/workflows/deploy.yml`). Las reglas se vuelven a desplegar con el paso 3 cuando cambian.
 6. En Authentication → Configuración → Dominios autorizados, verificar que figure el dominio `.web.app` del sitio (para el login con Google).
@@ -131,8 +139,12 @@ firestore.rules · firestore.indexes.json · firebase.json
 .github/workflows/       ← ci.yml, deploy.yml, admin-dar.yml
 ```
 
-Guía para convertir la plantilla en una startup nueva: [`docs/NUEVA-STARTUP.md`](docs/NUEVA-STARTUP.md).
+Cómo se arma una startup nueva a partir de la plantilla: [`docs/NUEVA-STARTUP.md`](docs/NUEVA-STARTUP.md).
 
 ## Licencia
 
 Pendiente de definir por la cátedra (ver `LICENSE`).
+
+## Catálogo de ejemplo en producción (opcional)
+
+Para que el sitio publicado no quede vacío, el responsable puede cargar solo el catálogo demo (sin usuarios ni claves): `FIREBASE_PROJECT_ID=vacacionapp-mdp-d7e72 GOOGLE_APPLICATION_CREDENTIALS=... npm run seed -- --produccion --yes`.
